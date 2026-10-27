@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e7a55">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tornooi">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Badminton Tornooi</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky tab bar boven, één kolom kaarten (max 980px), wedstrijdkaarten in een raster dat op gsm stapelt */
+:root{
+  --bg:#eef2ef; --card:#ffffff; --fg:#14211b; --muted:#5d6b64; --line:#d5ddd8; --chip:#e4ebe7;
+  --court:#0e7a55; --court-ink:#ffffff; --teamA:#2357c6; --teamB:#c9520e;
+  --ok:#1f8a4c; --warn:#b42318; --hc:#8a5a00; --hc-bg:#fff1cc;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1512; --card:#18201c; --fg:#e4ece7; --muted:#97a69e; --line:#2a3530; --chip:#222c27;
+  --court:#2fb383; --court-ink:#07140e; --teamA:#6c9bff; --teamB:#ff9a5c;
+  --ok:#5fd08e; --warn:#ff7b6b; --hc:#ffd27a; --hc-bg:#3a2e10; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0f1512; --card:#18201c; --fg:#e4ece7; --muted:#97a69e; --line:#2a3530; --chip:#222c27;
+  --court:#2fb383; --court-ink:#07140e; --teamA:#6c9bff; --teamB:#ff9a5c;
+  --ok:#5fd08e; --warn:#ff7b6b; --hc:#ffd27a; --hc-bg:#3a2e10; color-scheme:dark;}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--court)}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--court);color:var(--court-ink);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 0}
+.hwrap{max-width:980px;margin:0 auto}
+h1{font-family:var(--display);font-size:24px;margin:0;letter-spacing:.02em;text-transform:uppercase;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+h1 small{font-family:var(--body);font-size:13px;font-weight:500;text-transform:none;letter-spacing:0;opacity:.85}
+nav{display:flex;gap:2px;margin-top:8px;overflow-x:auto}
+nav button{font-family:var(--display);font-size:17px;letter-spacing:.04em;text-transform:uppercase;background:transparent;color:var(--court-ink);
+  border:0;padding:8px 14px 10px;border-bottom:3px solid transparent;opacity:.75;cursor:pointer;white-space:nowrap}
+nav button.on{opacity:1;border-bottom-color:var(--court-ink)}
+main{max-width:980px;margin:0 auto;padding-block:16px 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:14px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+h2{font-family:var(--display);font-size:21px;margin:0 0 10px;letter-spacing:.02em;text-wrap:balance}
+h3{font-family:var(--display);font-size:18px;margin:0 0 6px}
+.head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.head h2{margin:0}
+.muted{color:var(--muted)} .hint{color:var(--muted);font-size:13px;margin:8px 0 0}
+.warn{color:var(--warn);font-weight:600}
+input,select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--court);outline-offset:1px}
+.btn{font:inherit;font-weight:600;border:1px solid var(--line);background:var(--chip);color:var(--fg);border-radius:7px;padding:8px 14px;cursor:pointer}
+.btn.primary{background:var(--court);color:var(--court-ink);border-color:var(--court)}
+.btn.danger{color:var(--warn)}
+.btn.small{padding:5px 10px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.namewrap{display:flex;gap:6px;min-width:0}.namewrap input{flex:1;min-width:0}
+.bmres{display:flex;flex-direction:column;gap:6px;margin-top:8px}.bmres:empty{display:none}
+.bmrow{font:inherit;text-align:left;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:7px;padding:8px 10px;cursor:pointer;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.bmrow b{font-family:var(--display);font-size:17px}
+.addrow{display:grid;grid-template-columns:1fr auto auto 90px auto;gap:8px;align-items:center}
+@media (max-width:620px){.addrow{grid-template-columns:1fr 1fr}.addrow .namewrap{grid-column:1/-1}.addrow button{grid-column:1/-1}}
+.plist{display:flex;flex-direction:column}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto auto 64px 62px auto auto auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+.prow.off .pname{text-decoration:line-through;color:var(--muted)}
+.pname{font-weight:600;overflow-wrap:anywhere}
+.lvl{font-variant-numeric:tabular-nums;font-size:13px;color:var(--muted);text-align:right}
+@media (max-width:700px){.prow{display:flex;flex-wrap:wrap;gap:6px 8px}.prow .pname{flex-basis:100%}.prow input[data-act=c]{width:64px}.prow .lvl{min-width:44px}}
+.chk{display:flex;gap:5px;align-items:center;font-size:13px;white-space:nowrap}
+.icon{background:none;border:0;color:var(--muted);font-size:16px;cursor:pointer;padding:4px 6px}
+.tbtn{font:inherit;font-size:12px;font-weight:700;border-radius:999px;border:0;padding:4px 10px;cursor:pointer;color:#fff;white-space:nowrap}
+.tA{background:var(--teamA)} .tB{background:var(--teamB)} .t0{background:var(--muted)}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+@media (max-width:520px){.teams{grid-template-columns:1fr}}
+.team{border:1px solid var(--line);border-radius:8px;padding:10px 12px;border-top:4px solid}
+.team.A{border-top-color:var(--teamA)} .team.B{border-top-color:var(--teamB)}
+.team ul{margin:6px 0 0;padding-left:18px}
+.chip{display:inline-block;background:var(--chip);border-radius:999px;padding:2px 9px;font-size:12px;font-weight:600}
+.chip.ok{background:var(--ok);color:var(--card)}
+.matches{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.match{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.match.check{border-color:var(--warn)}
+.mhead{display:flex;gap:8px;align-items:center;padding:6px 10px;background:var(--chip);font-size:13px;font-weight:600}
+.mhead .court{font-family:var(--display);font-size:16px;letter-spacing:.03em}
+.mhead .type{margin-left:auto;color:var(--muted)}
+.side{display:grid;grid-template-columns:minmax(0,1fr) 64px;gap:8px;align-items:center;padding:8px 10px;border-left:4px solid transparent}
+.side+.side{border-top:1px dashed var(--line)}
+.side.A{border-left-color:var(--teamA)} .side.B{border-left-color:var(--teamB)}
+.names{font-weight:600;overflow-wrap:anywhere}
+.meta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.hc{display:inline-block;background:var(--hc-bg);color:var(--hc);border-radius:4px;padding:0 5px;font-weight:700}
+.score{font-family:var(--display);font-size:24px;text-align:center;padding:4px;font-variant-numeric:tabular-nums;width:100%}
+.setup .fmt{font-size:16px;margin:10px 0}
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.stepper button{font:inherit;font-weight:700;border:0;background:var(--chip);color:var(--fg);width:34px;height:34px;cursor:pointer}
+.stepper b{min-width:34px;text-align:center;font-variant-numeric:tabular-nums}
+.scoreboard{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.sb{border-radius:10px;padding:12px 14px;color:#fff}
+.sb.A{background:var(--teamA)} .sb.B{background:var(--teamB)}
+.sb .big{font-family:var(--display);font-size:46px;line-height:1;font-variant-numeric:tabular-nums}
+.sb .lbl{font-weight:600;opacity:.95}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+th:nth-child(2),td:nth-child(2){text-align:left}
+td.pos{font-family:var(--display);font-size:18px}
+.pos-bal{color:var(--ok)} .neg-bal{color:var(--warn)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600}
+.field span.h{font-weight:400;color:var(--muted);font-size:12px}
+.dc{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px}
+.dc input{width:100%;min-width:0}
+.dc label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:2px}
+details>summary{cursor:pointer;font-family:var(--display);font-size:19px;list-style:none}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"▸ ";color:var(--muted)}
+details[open]>summary::before{content:"▾ "}
+.confirm{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--hc-bg);color:var(--fg);padding:8px 10px;border-radius:7px;margin-top:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:8px;font-weight:600;z-index:20}
+@media (prefers-reduced-motion:no-preference){.match{transition:border-color .2s}}
+</style>
+
+</head>
+<body>
+<header><div class="hwrap">
+  <h1>Badminton Tornooi <small id="sub"></small></h1>
+  <nav id="nav">
+    <button data-tab="spelers">Spelers</button>
+    <button data-tab="rondes">Rondes</button>
+    <button data-tab="klassement">Klassement</button>
+    <button data-tab="instellingen">Instellingen</button>
+  </nav>
+</div></header>
+<main id="view"></main>
+<div id="toast" class="toast" hidden></div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+
+<script>
+const KEY='bt.tornooi.v1', DBKEY='bt.spelers.v1', TABKEY='bt.tab.v1';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function lsGet(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+const sum=a=>a.reduce((t,x)=>t+x,0);
+const mean=a=>a.length?sum(a)/a.length:0;
+const fmt=x=>Number.isInteger(x)?String(x):x.toFixed(1);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+const DEF={mode:'team',courts:4,target:21,ext:false,extFinal:true,extCap:30,minSingles:0,plannedRounds:8,
+  hc:true,hcFactor:1,hcMax:'',damesCorr:[2,2,2,2,2,2,2,2,2,2,2,2],teamA:'Team Blauw',teamB:'Team Oranje'};
+function fresh(){return {settings:{...DEF,damesCorr:[...DEF.damesCorr]},players:[],rounds:[],teamsMade:false,nextId:1}}
+let S=lsGet(KEY)||fresh(); S.settings={...DEF,...S.settings,hcFactor:1};
+let DB=lsGet(DBKEY)||{};
+let tab=lsGet(TABKEY)||'spelers';
+let pending=null; // bevestiging in de pagina zelf
+function save(){lsSet(KEY,S)}
+function toast(t){const el=$('#toast');el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
+
+/* ---------- Sterkte & klassementsvoordeel ---------- */
+const P=id=>S.players.find(p=>p.id===id);
+const nm=id=>P(id)?.name??'?';
+function autoCorr(p){return p.gender==='D'?(+S.settings.damesCorr[p.rank-1]||0):0}
+function corrOf(p){return (p.corr!==''&&p.corr!=null&&!isNaN(+p.corr))?+p.corr:autoCorr(p)}
+function level(p){return p.rank+corrOf(p)} // lager = sterker
+function handicap(lvA,lvB){
+  const s=S.settings; if(!s.hc) return {a:0,b:0};
+  const sa=sum(lvA),sb=sum(lvB);
+  let d=Math.round(Math.abs(sa-sb)*(+s.hcFactor||1));
+  if(s.hcMax!==''&&!isNaN(+s.hcMax)) d=Math.min(d,+s.hcMax);
+  d=Math.min(d,s.target-1);
+  return sa>sb?{a:d,b:0}:{a:0,b:sa<sb?d:0};
+}
+const scored=m=>m.sa!==''&&m.sb!==''&&m.sa!=null&&m.sb!=null;
+function scoreState(m,final){
+  if(!scored(m)) return 'open';
+  const a=+m.sa,b=+m.sb,t=S.settings.target,hi=Math.max(a,b),lo=Math.min(a,b);
+  const ext=final?S.settings.extFinal:S.settings.ext;
+  if(!ext) return hi===t&&lo<t?'ok':'check';
+  const cap=Math.max(+S.settings.extCap||t,t);
+  if(hi===t&&lo<=t-2) return 'ok';
+  if(hi>t&&hi<=cap&&hi-lo===2) return 'ok';
+  if(hi===cap&&lo===cap-1) return 'ok';
+  return 'check';
+}
+
+/* ---------- Historiek per speler ---------- */
+const started=R=>R.matches.some(scored);
+// incl bepaalt welke rondes meetellen; standaard enkel rondes waarin al gespeeld is
+function stats(upto=S.rounds.length,incl=started){
+  const st={};
+  S.players.forEach(p=>st[p.id]={played:0,singles:0,byes:0,realByes:0,lastBye:-9,lastSingle:-9,bal:0,partners:{},opps:{},pts:0,scored:0});
+  for(let r=0;r<upto;r++){const R=S.rounds[r];if(!R||!incl(R,r))continue;
+    S.players.forEach(p=>{if(p.joined>r)st[p.id].byes++});
+    R.byes.forEach(id=>{const s=st[id];if(!s)return;s.byes++;s.realByes++;s.lastBye=r});
+    R.matches.forEach(m=>{
+      const sa=sum(m.lvA),sb=sum(m.lvB),done=scored(m);
+      [[m.a,sb-sa,m.sa,m.b],[m.b,sa-sb,m.sb,m.a]].forEach(([ids,adv,score,opp])=>{
+        ids.forEach((id,i)=>{const s=st[id];if(!s)return;
+          s.played++;s.bal+=adv;
+          if(ids.length===2){const q=ids[1-i];s.partners[q]=(s.partners[q]||0)+1}
+          else{s.singles++;s.lastSingle=r}
+          opp.forEach(o=>s.opps[o]=(s.opps[o]||0)+1);
+          if(done){s.pts+=+score;s.scored++}
+        });
+      });
+    });
+  }
+  return st;
+}
+
+/* ---------- Indeling (aantal enkels/dubbels/uitzitters) ---------- */
+function planIndiv(n,courts,minS){
+  minS=Math.max(0,Math.min(minS,courts,Math.floor(n/2)));let best={s:0,d:0,play:0};
+  for(let s=minS;s<=Math.min(courts,Math.floor(n/2));s++)for(let d=0;s+d<=courts&&2*s+4*d<=n;d++){
+    const play=2*s+4*d;if(play>best.play||(play===best.play&&s<best.s))best={s,d,play}}
+  return best;
+}
+function planTeam(nA,nB,courts,minS){
+  const kmax=Math.min(nA,nB);minS=Math.max(0,Math.min(minS,courts,kmax));let best={s:0,d:0,k:0};
+  for(let s=minS;s<=Math.min(courts,kmax);s++)for(let d=0;s+d<=courts&&s+2*d<=kmax;d++){
+    const k=s+2*d;if(k>best.k||(k===best.k&&s<best.s))best={s,d,k}}
+  return best;
+}
+const activeP=()=>S.players.filter(p=>p.active);
+function currentPlan(minS){
+  const act=activeP(),c=+S.settings.courts||1;
+  if(S.settings.mode==='team'){
+    const A=act.filter(p=>p.team==='A'),B=act.filter(p=>p.team==='B'),f=planTeam(A.length,B.length,c,minS);
+    return {...f,byes:A.length+B.length-2*f.k,A,B};
+  }
+  const f=planIndiv(act.length,c,minS);return {...f,byes:act.length-f.play,all:act};
+}
+
+/* ---------- Planner ----------
+   Alle ongespeelde rondes worden samen gepland (simulated annealing), zodat de app niet
+   ronde per ronde vastloopt. Wat telt (van zwaar naar licht):
+   - nooit een identieke wedstrijd (zelfde dubbel tegen zelfde dubbel, zelfde enkel)
+   - individueel: opnieuw dezelfde partner pas als je met iedereen even vaak stond,
+     3e keer tegen dezelfde pas als je iedereen al 2 keer tegen had
+     teammodus: herhalingen mogen, maar worden zo goed mogelijk gespreid
+   - enkels eerlijk verdeeld, niet twee keer na elkaar
+   - matchbalans: som van (niveau tegenstanders − niveau eigen kant) gaat per speler naar 0,
+     ook tussentijds, zodat vroeger stoppen ook eerlijk is */
+const W={ident:1e6,match:1,bal:1,single:80,singleRow:40,
+  team:{partner:300,opp3:150,oppSpread:3},indiv:{partner:3000,opp3:3000,oppSpread:5}};
+function forEachMatch(R,single,double){
+  const f=R.f,g=R.groups;
+  if(g.length===2){const [A,B]=g;
+    for(let i=0;i<f.s;i++)single(A[i],B[i]);
+    for(let j=0;j<f.d;j++){const b=f.s+2*j;double(A[b],A[b+1],B[b],B[b+1])}}
+  else{const p=g[0];
+    for(let i=0;i<f.s;i++)single(p[2*i],p[2*i+1]);
+    for(let j=0;j<f.d;j++){const b=2*f.s+4*j;double(p[b],p[b+1],p[b+2],p[b+3])}}
+}
+function makeEvaluator(H){
+  const N=H.N,lv=H.lv,w=H.team?W.team:W.indiv;
+  const pC=new Int16Array(N*N),oC=new Int16Array(N*N),sC=new Int16Array(N),sR=new Int16Array(N),bal=new Float64Array(N);
+  const keys=[];
+  const pk=(x,y)=>x<y?x*64+y:y*64+x;
+  return function(plan){
+    pC.set(H.pC);oC.set(H.oC);sC.set(H.sC);sR.set(H.sR);bal.set(H.bal);keys.length=0;
+    let c=0;
+    const part=(x,y)=>{const n=pC[x*N+y];c+=w.partner*n;pC[x*N+y]++;pC[y*N+x]++};
+    const opp=(x,y)=>{const n=oC[x*N+y];c+=w.oppSpread*n+(n>=2?w.opp3*(2*n-3):0);oC[x*N+y]++;oC[y*N+x]++};
+    for(let r=0;r<plan.length;r++){
+      forEachMatch(plan[r],(a,b)=>{
+        const d=lv[b]-lv[a];c+=W.match*d*d;bal[a]+=d;bal[b]-=d;opp(a,b);
+        for(const x of [a,b]){const n=sC[x];c+=W.single*(2*n+1);if(sR[x]===r-1)c+=W.singleRow;sC[x]++;sR[x]=r}
+        keys.push(16777216+pk(a,b));
+      },(a1,a2,b1,b2)=>{
+        const d=lv[b1]+lv[b2]-lv[a1]-lv[a2];c+=W.match*d*d;bal[a1]+=d;bal[a2]+=d;bal[b1]-=d;bal[b2]-=d;
+        part(a1,a2);part(b1,b2);opp(a1,b1);opp(a1,b2);opp(a2,b1);opp(a2,b2);
+        const k1=pk(a1,a2),k2=pk(b1,b2);keys.push(k1<k2?k1*4096+k2:k2*4096+k1);
+      });
+      let b2=0;for(let i=0;i<N;i++)b2+=bal[i]*bal[i];c+=W.bal*b2/plan.length;
+    }
+    keys.sort((x,y)=>x-y);
+    for(let i=0;i<keys.length;i++)if(H.keys.has(keys[i])||(i&&keys[i]===keys[i-1]))c+=W.ident;
+    return c;
+  };
+}
+function anneal(plan,evalf,ms){
+  const clone=p=>p.map(R=>({...R,groups:R.groups.map(g=>g.slice())}));
+  const mov=[];plan.forEach((R,ri)=>R.groups.forEach((g,gi)=>{if(g.length>1)mov.push([ri,gi])}));
+  let cur=evalf(plan),best=cur,bestPlan=clone(plan);
+  if(!mov.length)return {plan,cost:cur};
+  const T0=120,T1=0.2,t0=performance.now();let T=T0,it=0;
+  for(;;){
+    if((it&127)===0){const el=performance.now()-t0;if(el>ms)break;T=T0*Math.pow(T1/T0,el/ms)}
+    it++;
+    const [ri,gi]=mov[Math.floor(Math.random()*mov.length)],g=plan[ri].groups[gi];
+    const i=Math.floor(Math.random()*g.length),j=Math.floor(Math.random()*g.length);if(i===j)continue;
+    [g[i],g[j]]=[g[j],g[i]];
+    const c=evalf(plan);
+    if(c<=cur||Math.random()<Math.exp((cur-c)/T)){cur=c;if(c<best-1e-9){best=c;bestPlan=clone(plan)}}
+    else [g[i],g[j]]=[g[j],g[i]];
+  }
+  return {plan:bestPlan,cost:best,it};
+}
+// plant de rondes [from, to) opnieuw; rondes ervoor blijven zoals ze zijn
+function planRounds(from,to,ms=2500){
+  const s=S.settings,team=s.mode==='team',act=activeP();
+  const oldMinS=S.rounds.slice(from).map(R=>R.minS);
+  S.rounds.length=from;
+  if(to<=from||act.length<2){computeConflicts();return}
+  const ids=act.map(p=>p.id),ix={};ids.forEach((id,i)=>ix[id]=i);const N=ids.length;
+  const st=stats(from,()=>true);
+  const H={N,team,lv:ids.map(id=>level(P(id))),pC:new Int16Array(N*N),oC:new Int16Array(N*N),
+    sC:new Int16Array(N),sR:new Int16Array(N).fill(-9),bal:new Float64Array(N),keys:new Set()};
+  ids.forEach((id,i)=>{const x=st[id];H.sC[i]=x.singles;H.sR[i]=x.lastSingle===from-1?-1:-9;H.bal[i]=x.bal;
+    for(const q in x.partners)if(q in ix)H.pC[i*N+ix[q]]=x.partners[q];
+    for(const q in x.opps)if(q in ix)H.oC[i*N+ix[q]]=x.opps[q]});
+  const pk=(x,y)=>x<y?x*64+y:y*64+x;
+  S.rounds.slice(0,from).forEach(R=>R.matches.forEach(m=>{
+    if(![...m.a,...m.b].every(id=>id in ix))return;
+    const a=m.a.map(id=>ix[id]),b=m.b.map(id=>ix[id]);
+    if(a.length===1)H.keys.add(16777216+pk(a[0],b[0]));
+    else{const k1=pk(a[0],a[1]),k2=pk(b[0],b[1]);H.keys.add(k1<k2?k1*4096+k2:k2*4096+k1)}}));
+  // uitzitters: wie het minst heeft uitgezeten (en niet net uitzat) zit eerst uit
+  const byes={},lastBye={};ids.forEach(id=>{byes[id]=st[id].byes;lastBye[id]=st[id].lastBye});
+  const pick=(list,n,r)=>n<=0?[]:shuffle(list.slice()).sort((x,y)=>(byes[x.id]-byes[y.id])||((lastBye[x.id]===r-1)-(lastBye[y.id]===r-1))).slice(0,n);
+  const plan=[];
+  for(let r=from;r<to;r++){
+    const minS=oldMinS[r-from]??s.minSingles,f=currentPlan(minS);let by,groups;
+    if(team){const bA=pick(f.A,f.A.length-f.k,r),bB=pick(f.B,f.B.length-f.k,r);by=[...bA,...bB];
+      groups=[f.A.filter(p=>!bA.includes(p)).map(p=>ix[p.id]),f.B.filter(p=>!bB.includes(p)).map(p=>ix[p.id])]}
+    else{by=pick(f.all,f.byes,r);groups=[f.all.filter(p=>!by.includes(p)).map(p=>ix[p.id])]}
+    by.forEach(p=>{byes[p.id]++;lastBye[p.id]=r});
+    plan.push({f,groups:groups.map(g=>shuffle(g)),byes:by.map(p=>p.id),minS});
+  }
+  const res=anneal(plan,makeEvaluator(H),ms),avg=mean(H.lv);
+  res.plan.forEach(R=>{
+    const M=[];
+    forEachMatch(R,(a,b)=>M.push({a:[ids[a]],b:[ids[b]]}),(a1,a2,b1,b2)=>M.push({a:[ids[a1],ids[a2]],b:[ids[b1],ids[b2]]}));
+    M.sort((x,y)=>y.a.length-x.a.length); // dubbels eerst op de terreinen
+    S.rounds.push({avg,final:false,minS:R.minS,byes:R.byes,
+      matches:M.map((m,i)=>({...m,court:i+1,lvA:m.a.map(id=>H.lv[ix[id]]),lvB:m.b.map(id=>H.lv[ix[id]]),sa:'',sb:''}))});
+  });
+  S.dirty=false;
+  computeConflicts();
+  return res;
+}
+// eerste ronde die nog vrij herpland mag worden: na de laatste ronde met een score
+function firstFree(){let k=0;S.rounds.forEach((R,i)=>{if(started(R)||R.final)k=i+1});return k}
+const plainRounds=()=>S.rounds.filter(R=>!R.final).length;
+
+/* ---------- Controle achteraf: welke regels werden (noodgedwongen) niet gehaald ---------- */
+function computeConflicts(){
+  const team=S.settings.mode==='team',pc={},oc={},seen=new Set();
+  const k=(a,b)=>a<b?a+'-'+b:b+'-'+a,g=(o,a,b)=>o[k(a,b)]||0;
+  const sig=m=>m.a.length===1?'s'+k(m.a[0],m.b[0]):[k(m.a[0],m.a[1]),k(m.b[0],m.b[1])].sort().join('|');
+  S.rounds.forEach(R=>{
+    R.issues=[];
+    const present=[...R.byes,...R.matches.flatMap(m=>[...m.a,...m.b])];
+    const minOver=(x,o,filt)=>{const L=present.filter(q=>q!==x&&filt(q)).map(q=>g(o,x,q));return L.length?Math.min(...L):0};
+    const same=x=>q=>!team||P(q)?.team===P(x)?.team,other=x=>q=>!team||P(q)?.team!==P(x)?.team;
+    if(!R.final)R.matches.forEach(m=>{
+      const sg=sig(m),names=ids=>ids.map(nm).join(' + ');
+      if(seen.has(sg))R.issues.push(`${names(m.a)} tegen ${names(m.b)} is een identieke wedstrijd`);
+      if(team)return;
+      [m.a,m.b].forEach(ids=>{if(ids.length<2)return;const [x,y]=ids,n=g(pc,x,y);
+        if(n>minOver(x,pc,same(x))||n>minOver(y,pc,same(y)))R.issues.push(`${nm(x)} en ${nm(y)} staan voor de ${n+1}e keer samen`)});
+      m.a.forEach(x=>m.b.forEach(y=>{const n=g(oc,x,y)+1;
+        if(n>Math.max(2,minOver(x,oc,other(x))+1)||n>Math.max(2,minOver(y,oc,other(y))+1))R.issues.push(`${nm(x)} speelt voor de ${n}e keer tegen ${nm(y)}`)}));
+    });
+    R.matches.forEach(m=>{seen.add(sig(m));
+      [m.a,m.b].forEach(ids=>{if(ids.length===2)pc[k(ids[0],ids[1])]=g(pc,ids[0],ids[1])+1});
+      m.a.forEach(x=>m.b.forEach(y=>oc[k(x,y)]=g(oc,x,y)+1))});
+  });
+}
+function standings(){
+  const st=stats();
+  return S.players.map(p=>{const s=st[p.id],avg=s.scored?s.pts/s.scored:0;
+    return {p,s,avg,corr:s.pts+s.realByes*avg}}).sort((x,y)=>(y.corr-x.corr)||(y.avg-x.avg));
+}
+function generateFinal(){
+  S.rounds.length=firstFree();
+  const act=new Set(activeP().map(p=>p.id));
+  const order=standings().filter(x=>act.has(x.p.id)).map(x=>x.p);
+  const lv={};order.forEach(p=>lv[p.id]=level(p));
+  const M=[],byes=[];
+  for(let i=0;i<order.length;i+=4){
+    const g=order.slice(i,i+4).map(p=>p.id);
+    if(g.length===4)M.push({a:[g[0],g[3]],b:[g[1],g[2]]});
+    else if(g.length>=2){M.push({a:[g[0]],b:[g[1]]});if(g[2])byes.push(g[2])}
+    else byes.push(...g);
+  }
+  const c=+S.settings.courts||1;
+  S.rounds.push({avg:mean(order.map(level)),final:true,byes,issues:[],
+    matches:M.map((m,i)=>({...m,court:i<c?i+1:'wacht ('+(i+1)+')',group:i,lvA:m.a.map(id=>lv[id]),lvB:m.b.map(id=>lv[id]),sa:'',sb:''}))});
+}
+
+/* ---------- Teams ---------- */
+function makeTeams(){
+  const act=activeP(),n=act.length,nA=Math.ceil(n/2);const c=[];
+  for(let t=0;t<5000;t++){const sh=shuffle(act.slice()),A=sh.slice(0,nA),B=sh.slice(nA);
+    const lA=A.map(level),lB=B.map(level);
+    const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+    const cost=Math.abs(mean(lA)-mean(lB))*nA+0.8*Math.abs(A.filter(p=>p.gender==='D').length-B.filter(p=>p.gender==='D').length)+0.3*Math.abs(sd(lA)-sd(lB));
+    c.push({cost,A,B})}
+  c.sort((x,y)=>x.cost-y.cost);
+  const pick=c[Math.floor(Math.random()*Math.min(12,c.length))];
+  pick.A.forEach(p=>p.team='A');pick.B.forEach(p=>p.team='B');S.teamsMade=true;
+}
+function autoTeam(p){
+  const act=activeP().filter(x=>x!==p&&x.team);
+  const A=act.filter(x=>x.team==='A'),B=act.filter(x=>x.team==='B');
+  if(A.length!==B.length)return A.length<B.length?'A':'B';
+  // gelijk aantal: kies het team waar het gemiddelde niveau daarna het dichtst bij het andere ligt
+  const gap=(X,Y)=>Math.abs(mean([...X,p].map(level))-mean(Y.map(level)));
+  return gap(A,B)<=gap(B,A)?'A':'B';
+}
+const teamName=t=>t==='A'?S.settings.teamA:S.settings.teamB;
+function teamsReady(){const a=activeP();return S.teamsMade&&a.some(p=>p.team==='A')&&a.some(p=>p.team==='B')}
+
+/* ---------- Weergaves ---------- */
+const rankOpts=r=>Array.from({length:12},(_,i)=>`<option value="${i+1}" ${r===i+1?'selected':''}>${i+1}</option>`).join('');
+function vSpelers(){
+  const act=activeP(),team=S.settings.mode==='team';
+  let h=`<section class="card"><h2>Speler toevoegen</h2>
+  <form id="addForm" class="addrow" autocomplete="off">
+    <div class="namewrap"><input id="fName" list="dbList" placeholder="Naam" required><button type="button" class="btn small" data-act="bmSearch" title="Zoek klassement op badman.app">Zoek op badman</button></div>
+    <select id="fG" aria-label="Geslacht"><option value="H">Heer</option><option value="D">Dame</option></select>
+    <select id="fR" aria-label="Klassement">${rankOpts(8)}</select>
+    <input id="fC" inputmode="decimal" placeholder="corr. auto" aria-label="Correctie">
+    <button class="btn primary" type="submit">Toevoegen</button>
+  </form>
+  <div id="bmRes" class="bmres"></div>
+  <datalist id="dbList">${Object.values(DB).sort((a,b)=>a.name.localeCompare(b.name)).map(d=>`<option value="${esc(d.name)}"></option>`).join('')}</datalist>
+  <p class="hint">Klassement = hoogste klassement van de speler (1 sterkst, 12 zwakst). Gekende spelers worden onthouden: typ de naam en de rest vult zich in.
+  Met "Zoek op badman" haal je geslacht en hoogste klassement (enkel, dubbel of gemengd) op van badman.app; daarvoor is internet nodig.
+  Correctie leeg laten = automatisch (dames volgens de tabel in Instellingen). Niveau = klassement + correctie.</p></section>`;
+  h+=`<section class="card"><div class="head"><h2>Spelers</h2><span class="chip">${act.length} aanwezig${S.players.length!==act.length?` · ${S.players.length-act.length} weg`:''}</span></div>`;
+  if(!S.players.length)h+=`<p class="muted">Nog geen spelers. Voeg ze hierboven één voor één toe, of laad <button class="btn small" data-act="demo">voorbeeldspelers</button> om te testen.</p>`;
+  h+=`<div class="plist">${S.players.map(p=>{
+    const used=S.rounds.some(R=>started(R)&&(R.byes.includes(p.id)||R.matches.some(m=>m.a.includes(p.id)||m.b.includes(p.id))));
+    return `<div class="prow ${p.active?'':'off'}">
+      <span class="pname">${esc(p.name)}</span>
+      <select data-act="g" data-id="${p.id}" aria-label="Geslacht"><option value="H" ${p.gender==='H'?'selected':''}>H</option><option value="D" ${p.gender==='D'?'selected':''}>D</option></select>
+      <select data-act="r" data-id="${p.id}" aria-label="Klassement">${rankOpts(p.rank)}</select>
+      <input data-act="c" data-id="${p.id}" value="${esc(p.corr??'')}" placeholder="${fmt(autoCorr(p))}" inputmode="decimal" aria-label="Correctie" title="Correctie (leeg = automatisch)">
+      <span class="lvl">niv ${fmt(level(p))}</span>
+      ${team?`<button class="tbtn ${p.team==='A'?'tA':p.team==='B'?'tB':'t0'}" data-act="team" data-id="${p.id}" title="Wissel van team">${p.team?esc(teamName(p.team)):'geen team'}</button>`:'<span></span>'}
+      <label class="chk"><input type="checkbox" data-act="act" data-id="${p.id}" ${p.active?'checked':''}> aanwezig</label>
+      ${used?'<span></span>':`<button class="icon" data-act="del" data-id="${p.id}" aria-label="Verwijder ${esc(p.name)}">✕</button>`}
+    </div>`}).join('')}</div>
+    <p class="hint">Vertrekt iemand vroeger? Vink "aanwezig" uit: die speler komt niet meer in de volgende rondes, gespeelde scores blijven staan.</p></section>`;
+  if(team){
+    const A=act.filter(p=>p.team==='A'),B=act.filter(p=>p.team==='B');
+    const col=(t,L)=>`<div class="team ${t}"><h3>${esc(teamName(t))} <span class="chip">${L.length}</span></h3>
+      <div class="meta">gem. niveau ${L.length?mean(L.map(level)).toFixed(2):'–'} · ${L.filter(p=>p.gender==='D').length} dames</div>
+      <ul>${L.slice().sort((x,y)=>level(x)-level(y)).map(p=>`<li>${esc(p.name)} <span class="muted">(${fmt(level(p))})</span></li>`).join('')}</ul></div>`;
+    h+=`<section class="card"><div class="head"><h2>Teams</h2>
+      <button class="btn ${S.teamsMade?'':'primary'}" data-act="mkTeams">${S.teamsMade?'Teams opnieuw verdelen':'Maak teams'}</button></div>
+      ${confirmBox('mkTeams')}
+      ${S.teamsMade?`<div class="teams">${col('A',A)}${col('B',B)}</div>
+      <p class="hint">Eerlijk verdeeld op gemiddeld niveau en aantal dames, met willekeur. Tik op de teamknop bij een speler om die te wisselen. Laatkomers gaan automatisch naar het team met de minste spelers.</p>`
+      :'<p class="muted">Voeg eerst alle aanwezige spelers toe en maak dan de teams.</p>'}</section>`;
+  }
+  return h;
+}
+function confirmBox(act){
+  if(!pending||pending.act!==act)return '';
+  return `<div class="confirm"><span>${esc(pending.msg)}</span><button class="btn small danger" data-act="yes">Ja</button><button class="btn small" data-act="no">Annuleer</button></div>`;
+}
+function fmtText(f){
+  const parts=[];
+  if(f.d)parts.push(`${f.d} dubbel${f.d>1?'s':''}`);
+  if(f.s)parts.push(`${f.s} enkel${f.s>1?'s':''}`);
+  if(!parts.length)return 'Te weinig spelers of terreinen.';
+  return parts.join(' + ')+` · ${f.byes?`${f.byes} speler${f.byes>1?'s zitten':' zit'} uit`:'niemand zit uit'}`;
+}
+function vRondes(){
+  const s=S.settings,team=s.mode==='team';
+  const ready=team?teamsReady():activeP().length>=2;
+  if(!ready)return `<section class="card"><h2>Planning</h2><p class="muted">${team?'Maak eerst de teams in het tabblad Spelers.':'Voeg eerst spelers toe in het tabblad Spelers.'}</p></section>`+roundsList();
+  const ff=firstFree(),played=S.rounds.filter(started).length,future=S.rounds.length-ff,hasFinal=S.rounds.some(R=>R.final);
+  const f=currentPlan(s.minSingles),toPlan=Math.max(0,s.plannedRounds-ff);
+  return `<section class="card setup"><div class="head"><h2>Planning</h2><span class="chip">${played} gespeeld · ${future} gepland</span></div>
+    <div class="grid2" style="margin-top:8px">
+      <label class="field">Aantal rondes<input type="number" id="pRounds" data-set="plannedRounds" value="${s.plannedRounds}" min="1" max="40"></label>
+      <label class="field">Minimum enkels per ronde<input type="number" id="pMinS" data-set="minSingles" value="${s.minSingles}" min="0" max="20">
+        <span class="h">Bij een oneven aantal of rest 2 komt er automatisch een enkel bij.</span></label>
+    </div>
+    <p class="fmt"><b>${fmtText(f)}</b> per ronde${team?` <span class="muted">(${f.k} per team)</span>`:''}</p>
+    ${S.dirty&&future?`<div class="confirm"><span>Spelers of instellingen zijn gewijzigd sinds de planning. Herplan de rondes die nog niet begonnen zijn.</span>
+      <button class="btn small primary" data-act="replan" data-from="${ff}">Herplan vanaf ronde ${ff+1}</button>
+      ${future>1?`<button class="btn small" data-act="replan" data-from="${ff+1}">Vanaf ronde ${ff+2} (ronde ${ff+1} is al bezig)</button>`:''}</div>`:''}
+    ${hasFinal?'<p class="muted">De finaleronde is gemaakt. Verwijder ze onderaan als je toch nog rondes wil bijplannen.</p>':`<div class="row" style="margin-top:10px">
+      <button class="btn primary" data-act="plan" ${future||toPlan?'':'disabled'}>${future?'Herplan ongespeelde rondes':`Plan ${toPlan} ronde${toPlan===1?'':'s'}`}</button>
+      <button class="btn" data-act="addRound">+ Eén ronde extra</button>
+      ${future?'<button class="btn danger" data-act="dropFuture">Stop hier</button>':''}
+      ${s.mode==='indiv'?'<button class="btn" data-act="final">Finaleronde: 1+4 tegen 2+3</button>':''}</div>`}
+    ${confirmBox('dropFuture')}${confirmBox('final')}
+    <p class="hint">De app plant alle rondes samen, zodat het over het hele tornooi eerlijk is: geen identieke wedstrijden, herhalingen zo eerlijk mogelijk gespreid, en de matchbalans van iedereen richting 0, ook tussendoor.
+    Vroeger stoppen kan altijd: ongespeelde rondes tellen nergens mee. Vertrekt er iemand of komt er iemand bij, pas dan de spelerslijst aan en herplan.</p></section>`+roundsList();
+}
+// huidige ronde = laatste begonnen ronde die nog niet af is, anders de eerste ongespeelde
+function currentIdx(){
+  let L=-1;S.rounds.forEach((R,i)=>{if(started(R))L=i});
+  if(L>=0&&!S.rounds[L].matches.every(scored))return L;
+  return L+1<S.rounds.length?L+1:-1;
+}
+function roundsList(){
+  const c=currentIdx(),last=S.rounds.length-1;let h='';
+  if(c>=0)h+=roundCard(S.rounds[c],c,true,c===last);
+  const next=S.rounds.map((R,i)=>i).filter(i=>i>c&&c>=0);
+  if(next.length)h+=`<h2 style="margin:6px 0 0">Volgende rondes</h2>`+next.map(i=>roundCard(S.rounds[i],i,false,i===last)).join('');
+  const prev=S.rounds.map((R,i)=>i).filter(i=>c<0||i<c).reverse();
+  if(prev.length)h+=`<h2 style="margin:6px 0 0">Gespeelde rondes</h2>`+prev.map(i=>roundCard(S.rounds[i],i,false,i===last)).join('');
+  return h;
+}
+function roundCard(R,i,open,isLast){
+  const n=R.matches.filter(scored).length,done=n===R.matches.length,team=S.settings.mode==='team'&&!R.final;
+  const title=R.final?'Finaleronde':'Ronde '+(i+1);
+  let tot='';
+  if(team&&n){let a=0,b=0;R.matches.forEach(m=>{if(scored(m)){a+=+m.sa;b+=+m.sb}});
+    tot=`<span class="chip" style="background:var(--teamA);color:#fff">${a}</span> <span class="chip" style="background:var(--teamB);color:#fff">${b}</span>`}
+  const iss=R.issues||[],ms=R.minS??S.settings.minSingles;
+  const fmtCtl=!started(R)&&!R.final?`<div class="row" style="margin-bottom:10px;font-size:14px">Spelvorm deze ronde: minimum enkels
+      <span class="stepper"><button data-act="rms" data-r="${i}" aria-label="Minder enkels">−</button><b>${ms}</b><button data-act="rps" data-r="${i}" aria-label="Meer enkels">+</button></span>
+      <button class="btn small" data-act="r11" data-r="${i}">Alles 1v1</button><button class="btn small" data-act="r22" data-r="${i}">Vooral 2v2</button></div>`:'';
+  const body=`${fmtCtl}${iss.length?`<div class="warn" style="margin-bottom:8px">Let op, niet anders mogelijk met deze spelers:<ul style="margin:4px 0 0">${iss.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`:''}
+    <div class="matches">${R.matches.map((m,j)=>matchCard(R,i,m,j)).join('')}</div>
+    ${R.byes.length?`<p class="muted">Rust: ${R.byes.map(id=>esc(nm(id))).join(', ')}</p>`:''}
+    ${isLast?`<div class="row" style="margin-top:8px"><button class="btn small danger" data-act="delRound">Deze ronde verwijderen</button></div>${confirmBox('delRound')}`:''}`;
+  const state=done?'<span class="chip ok">klaar</span>':n?`<span class="chip">${n}/${R.matches.length}</span>`:'<span class="chip">gepland</span>';
+  const head=`${title} ${state} ${tot}${iss.length?' <span class="warn">⚠</span>':''}`;
+  if(open)return `<section class="card"><h2>${head}</h2>${body}</section>`;
+  return `<section class="card"><details><summary>${head}</summary><div style="margin-top:10px">${body}</div></details></section>`;
+}
+function matchCard(R,i,m,j){
+  const hc=handicap(m.lvA,m.lvB),st=scoreState(m,R.final),team=S.settings.mode==='team'&&!R.final;
+  const side=(ids,lvs,key,h,cls)=>`<div class="side ${cls}"><div><div class="names">${ids.map(id=>esc(nm(id))).join(' + ')}</div>
+    <div class="meta">niveau ${fmt(sum(lvs))}${h?` · <span class="hc">+${h} voor</span>`:''}</div></div>
+    <input class="score" id="sc-${i}-${j}-${key}" inputmode="numeric" pattern="[0-9]*" data-act="score" data-r="${i}" data-m="${j}" data-k="${key}" value="${esc(m[key])}" placeholder="–" aria-label="Score ${ids.map(nm).join(' en ')}"></div>`;
+  const start=hc.a||hc.b?`start ${hc.a}–${hc.b}`:'';
+  return `<div class="match ${st}"><div class="mhead"><span class="court">Terrein ${m.court}</span><span>${start}</span>${st==='check'?'<span class="warn">score nakijken</span>':''}<span class="type">${m.a.length===1?'Enkel':'Dubbel'}</span></div>
+    ${side(m.a,m.lvA,'sa',hc.a,team?'A':'')}${side(m.b,m.lvB,'sb',hc.b,team?'B':'')}</div>`;
+}
+function vKlass(){
+  const rows=standings(),team=S.settings.mode==='team';let h='';
+  if(team){let a=0,b=0;S.rounds.filter(R=>!R.final).forEach(R=>R.matches.forEach(m=>{if(scored(m)){a+=+m.sa;b+=+m.sb}}));
+    h+=`<section class="scoreboard"><div class="sb A"><div class="lbl">${esc(S.settings.teamA)}</div><div class="big">${a}</div></div>
+      <div class="sb B"><div class="lbl">${esc(S.settings.teamB)}</div><div class="big">${b}</div></div></section>`}
+  const cls=x=>x>0.5?'pos-bal':x<-0.5?'neg-bal':'';
+  const sg=x=>(x>0?'+':'')+fmt(Math.round(x*10)/10);
+  h+=`<section class="card"><h2>Individueel klassement</h2><div class="tablewrap"><table>
+    <thead><tr><th>#</th><th>Speler</th><th>Punten</th><th>Wed.</th><th>Gem.</th><th>Uitgez.</th><th>Totaal*</th><th>Enkels</th><th>Matchbal.</th></tr></thead><tbody>
+    ${rows.map((x,i)=>`<tr${x.p.active?'':' class="muted"'}><td class="pos">${i+1}</td><td>${team&&x.p.team?`<span class="tbtn ${x.p.team==='A'?'tA':'tB'}" style="padding:1px 6px;margin-right:6px">${x.p.team}</span>`:''}${esc(x.p.name)} <span class="muted">(${fmt(level(x.p))})</span></td>
+      <td>${x.s.pts}</td><td>${x.s.scored}</td><td>${x.avg.toFixed(1)}</td><td>${x.s.realByes}</td><td><b>${Math.round(x.corr)}</b></td><td>${x.s.singles}</td>
+      <td class="${cls(x.s.bal)}">${sg(x.s.bal)}</td></tr>`).join('')}
+    </tbody></table></div>
+    <p class="hint">* Totaal = punten + (keren uitgezeten × eigen gemiddelde), zodat uitzitten geen nadeel geeft. Het klassement volgt dit totaal.<br>
+    Matchbalans: som van (niveau tegenstanders − niveau eigen kant). Positief = makkelijkere matchen gehad, negatief = zwaardere.
+    De planning stuurt dit voor iedereen richting 0. Alleen rondes met scores tellen mee.</p></section>`;
+  return h;
+}
+function vInst(){
+  const s=S.settings,locked=S.rounds.length>0;
+  const num=(k,l,h,attr='')=>`<label class="field">${l}<input type="number" data-set="${k}" value="${esc(s[k])}" ${attr}>${h?`<span class="h">${h}</span>`:''}</label>`;
+  const chk=(k,l,h)=>`<label class="field"><span class="row"><input type="checkbox" data-set="${k}" ${s[k]?'checked':''}> ${l}</span>${h?`<span class="h">${h}</span>`:''}</label>`;
+  return `<section class="card"><h2>Tornooi</h2><div class="grid2">
+    <label class="field">Vorm<select data-set="mode" ${locked?'disabled':''}><option value="team" ${s.mode==='team'?'selected':''}>Teamtornooi (2 teams)</option><option value="indiv" ${s.mode==='indiv'?'selected':''}>Individueel tornooi</option></select>
+      <span class="h">${locked?'Vast zodra er een ronde gespeeld is.':'Kies voor je de eerste ronde maakt.'}</span></label>
+    ${num('courts','Aantal terreinen','','min="1" max="20"')}
+    <label class="field">Naam team 1<input data-set="teamA" value="${esc(s.teamA)}"></label>
+    <label class="field">Naam team 2<input data-set="teamB" value="${esc(s.teamB)}"></label>
+  </div></section>
+  <section class="card"><h2>Wedstrijden</h2><div class="grid2">
+    ${num('target','Spelen tot','Bijv. 21, 15 of 11.','min="1" max="99"')}
+    ${chk('ext','Verlengingen in gewone rondes','2 punten verschil, tot het maximum hieronder.')}
+    ${chk('extFinal','Verlengingen in de finaleronde','')}
+    ${num('extCap','Maximum bij verlenging','Bijv. 30 bij spelen tot 21.','min="1" max="99"')}
+  </div></section>
+  <section class="card"><h2>Klassementsvoordeel</h2><div class="grid2">
+    ${chk('hc','Klassementsvoordeel gebruiken','De zwakkere kant start met het verschil in niveau als voorsprong. Dubbel: niveaus worden opgeteld. De voorsprong telt mee in de punten.')}
+    ${num('hcMax','Maximum voorsprong','Leeg = geen maximum.','min="0"')}
+  </div>
+  <h3 style="margin-top:14px">Damescorrectie per klassement</h3>
+  <p class="hint" style="margin-top:0">Per damesklassement vul je in hoeveel klassementen je erbij telt om op hetzelfde niveau als een heer te komen.
+  Voorbeeld: staat er bij "Dame 6" een 2, dan speelt een dame met klassement 6 op het niveau van een heer 8.
+  Wil je voor één speelster afwijken, vul dan bij die speler zelf het vakje "correctie" in (tabblad Spelers).</p>
+  <div class="dc">${s.damesCorr.map((v,i)=>`<label>Dame ${i+1}<input type="number" step="0.5" data-dc="${i}" value="${esc(v)}" aria-label="Correctie dame klassement ${i+1}"><span>= heer ${fmt(i+1+(+v||0))}</span></label>`).join('')}</div></section>
+  <section class="card"><h2>Gegevens</h2>
+    <p class="hint" style="margin-top:0">Alles wordt automatisch bewaard in deze browser op dit toestel. Maak tussendoor een back-up als je wil wisselen van toestel.</p>
+    <div class="row" style="margin-top:10px"><button class="btn" data-act="export">Back-up kopiëren</button><button class="btn" data-act="import">Back-up laden (bestand)</button>
+    <button class="btn danger" data-act="newT">Nieuw tornooi</button></div>
+    ${confirmBox('newT')}
+    <textarea id="backup" rows="3" style="width:100%;margin-top:10px;font:12px ui-monospace,monospace;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:6px" placeholder="Hier verschijnt de back-up (JSON). Je kan hier ook een back-up plakken en op Plakken laden drukken." aria-label="Back-up"></textarea>
+    <div class="row"><button class="btn small" data-act="paste">Plakken laden</button></div>
+    <p class="hint">Nieuw tornooi wist rondes en spelers van vandaag. De lijst gekende spelers (${Object.keys(DB).length}) blijft bewaard.</p></section>`;
+}
+function render(){
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  const s=S.settings;
+  $('#sub').textContent=`${s.mode==='team'?'Teamtornooi':'Individueel'} · ${activeP().length} spelers · ${s.courts} terreinen · tot ${s.target}`;
+  $('#view').innerHTML=tab==='spelers'?vSpelers():tab==='rondes'?vRondes():tab==='klassement'?vKlass():vInst();
+  save();
+}
+
+/* ---------- Acties ---------- */
+function addPlayer(name,gender,rank,corr){
+  const p={id:S.nextId++,name,gender,rank,corr,active:true,team:null,joined:firstFree()};markDirty();
+  if(S.settings.mode==='team'&&S.teamsMade){p.team=null;S.players.push(p);p.team=autoTeam(p)}else S.players.push(p);
+  DB[name.toLowerCase()]={name,gender,rank,corr};lsSet(DBKEY,DB);
+}
+function markDirty(){if(S.rounds.length>firstFree())S.dirty=true}
+function busy(fn,done){toast('Planning wordt gemaakt…');setTimeout(()=>{fn();render();toast(done||'Planning klaar')},40)}
+function syncDB(p){markDirty();DB[p.name.toLowerCase()]={name:p.name,gender:p.gender,rank:p.rank,corr:p.corr};lsSet(DBKEY,DB)}
+document.addEventListener('submit',e=>{
+  if(e.target.id!=='addForm')return;e.preventDefault();
+  const name=$('#fName').value.trim();if(!name)return;
+  if(S.players.some(p=>p.name.toLowerCase()===name.toLowerCase())){toast(name+' staat al in de lijst');return}
+  addPlayer(name,$('#fG').value,+$('#fR').value,$('#fC').value.trim());
+  render();toast(name+' toegevoegd');setTimeout(()=>$('#fName')?.focus(),0);
+});
+document.addEventListener('input',e=>{
+  const t=e.target;
+  if(t.id==='fName'){const d=DB[t.value.trim().toLowerCase()];if(d){$('#fG').value=d.gender;$('#fR').value=d.rank;$('#fC').value=d.corr??''}}
+  if(t.dataset.act==='score'){const m=S.rounds[+t.dataset.r].matches[+t.dataset.m];m[t.dataset.k]=t.value.replace(/[^0-9]/g,'');save()}
+});
+document.addEventListener('change',e=>{
+  const t=e.target,a=t.dataset.act,p=t.dataset.id?P(+t.dataset.id):null;
+  if(a==='g'){p.gender=t.value;syncDB(p)}
+  else if(a==='r'){p.rank=+t.value;syncDB(p)}
+  else if(a==='c'){p.corr=t.value.trim();syncDB(p)}
+  else if(a==='act'){p.active=t.checked;markDirty();if(p.active&&S.settings.mode==='team'&&S.teamsMade&&!p.team)p.team=autoTeam(p)}
+  else if(a==='score'){ // geen volledige herteken, zodat de cursor in het volgende vakje blijft
+    const R=S.rounds[+t.dataset.r],m=R.matches[+t.dataset.m],card=t.closest('.match');
+    card.classList.remove('ok','check','open');card.classList.add(scoreState(m,R.final));
+    const n=R.matches.filter(scored).length,chip=t.closest('.card').querySelector('.chip');
+    if(chip){chip.textContent=n===R.matches.length?'klaar':n+'/'+R.matches.length;chip.classList.toggle('ok',n===R.matches.length)}
+    return}
+  else if(t.dataset.set){const k=t.dataset.set;
+    if(t.type==='checkbox')S.settings[k]=t.checked;
+    else if(t.type==='number')S.settings[k]=t.value===''?(k==='hcMax'?'':DEF[k]):+t.value;
+    else S.settings[k]=t.value;
+    if(k==='minSingles'){S.rounds.slice(firstFree()).forEach(R=>{if(!R.final)R.minS=S.settings.minSingles});markDirty()}
+    if(k==='courts')markDirty()}
+  else if(t.dataset.dc!=null){S.settings.damesCorr[+t.dataset.dc]=t.value===''?0:+t.value}
+  else if(t.id==='importFile'){const f=t.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>loadBackup(rd.result);rd.readAsText(f);t.value='';return}
+  else return;
+  render();
+});
+function loadBackup(txt){
+  try{const o=JSON.parse(txt);if(!o||!Array.isArray(o.players)||!Array.isArray(o.rounds))throw 0;
+    S=o;S.settings={...DEF,...S.settings,hcFactor:1};render();toast('Back-up geladen')}
+  catch(e){toast('Dit is geen geldige back-up')}
+}
+/* ---------- Klassement opzoeken via badman.app (publieke GraphQL-API) ---------- */
+let BM=[];
+async function badmanSearch(q){
+  const parts=q.trim().split(/\s+/),like=v=>({$iLike:`%${v}%`});
+  const where=parts.length===1?{$or:[{firstName:like(parts[0])},{lastName:like(parts[0])}]}
+    :{$or:[{firstName:like(parts[0]),lastName:like(parts.slice(1).join(' '))},{firstName:like(parts.at(-1)),lastName:like(parts.slice(0,-1).join(' '))}]};
+  const query='query Zoek($where: JSONObject){players(where:$where,take:12){rows{id fullName gender rankingLastPlaces{single double mix rankingDate}}}}';
+  const r=await fetch('https://badman.app/graphql',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({query,variables:{where}})});
+  if(!r.ok)throw new Error('HTTP '+r.status);
+  const j=await r.json();if(j.errors?.length)throw new Error(j.errors[0].message);
+  return (j.data?.players?.rows||[]).map(p=>{const rp=(p.rankingLastPlaces||[])[0]||{};
+    const best=Math.min(...[rp.single,rp.double,rp.mix].filter(x=>x>0),12);
+    return {name:p.fullName,gender:p.gender==='F'?'D':'H',e:rp.single,d:rp.double,g:rp.mix,best}});
+}
+const DEMO=[['Lotte','D',5],['Jens','H',4],['Sara','D',8],['Pieter','H',6],['Emma','D',10],['Ruben','H',7],['Lien','D',7],['Tom','H',9],['Nina','D',11],['Wout','H',5],['Fien','D',9],['Arne','H',11],['Hanne','D',6],['Bram','H',8]];
+document.addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.dataset.tab){tab=b.dataset.tab;lsSet(TABKEY,tab);pending=null;render();window.scrollTo(0,0);return}
+  const a=b.dataset.act,p=b.dataset.id?P(+b.dataset.id):null;if(!a)return;
+  const s=S.settings;
+  switch(a){
+    case 'bmSearch':{const q=$('#fName').value.trim(),box=$('#bmRes');
+      if(q.length<2){toast('Typ eerst (een deel van) de naam');return}
+      box.innerHTML='<p class="muted">Zoeken op badman.app…</p>';
+      badmanSearch(q).then(rows=>{BM=rows;box.innerHTML=rows.length?rows.map((r,i)=>`<button type="button" class="bmrow" data-act="bmPick" data-i="${i}"><span>${esc(r.name)} <span class="muted">(${r.gender==='D'?'dame':'heer'})</span></span><span class="muted">E${r.e??'–'} D${r.d??'–'} G${r.g??'–'} → <b>${r.best}</b></span></button>`).join('')
+        :'<p class="muted">Niemand gevonden op badman.app. Controleer de spelling of vul het klassement zelf in.</p>'})
+      .catch(err=>{box.innerHTML=`<p class="warn">Badman.app kon niet bereikt worden (${esc(err.message)}).</p><p class="hint">Op claude.ai blokkeert de pagina verbindingen naar andere sites; in de app-versie werkt het wel, als je internet hebt. Vul het klassement anders zelf in.</p>`});
+      return}
+    case 'bmPick':{const r=BM[+b.dataset.i];if(!r)return;$('#fName').value=r.name;$('#fG').value=r.gender;$('#fR').value=r.best;$('#bmRes').innerHTML='';toast('Gegevens van '+r.name+' ingevuld');return}
+    case 'del':S.players=S.players.filter(x=>x!==p);markDirty();break;
+    case 'team':p.team=p.team==='A'?'B':'A';markDirty();break;
+    case 'demo':DEMO.forEach(([n,g,r])=>addPlayer(n+' (vb)',g,r,''));break;
+    case 'mkTeams':if(S.rounds.length){pending={act:'mkTeams',msg:'Er zijn al rondes gespeeld. Toch opnieuw verdelen?',run:makeTeams};break}makeTeams();toast('Teams gemaakt');break;
+    case 'plan':{const ff=firstFree();busy(()=>planRounds(ff,Math.max(s.plannedRounds,ff)));return}
+    case 'replan':{const fr=+b.dataset.from;busy(()=>planRounds(fr,Math.max(s.plannedRounds,S.rounds.length,fr)));return}
+    case 'addRound':{const n=S.rounds.length;s.plannedRounds=Math.max(s.plannedRounds,n+1);busy(()=>planRounds(n,n+1),'Ronde '+(n+1)+' toegevoegd');return}
+    case 'rms':case 'rps':case 'r11':case 'r22':{const i=+b.dataset.r,R=S.rounds[i],cur=R.minS??s.minSingles;
+      R.minS=a==='rms'?Math.max(0,cur-1):a==='rps'?Math.min(+s.courts,cur+1):a==='r11'?+s.courts:0;
+      busy(()=>planRounds(i,S.rounds.length));return}
+    case 'dropFuture':pending={act:'dropFuture',msg:`De ${S.rounds.length-firstFree()} ongespeelde ronde(s) verwijderen?`,run:()=>{S.rounds.length=firstFree();S.dirty=false}};break;
+    case 'final':if(S.rounds.length>firstFree()){pending={act:'final',msg:`Finaleronde maken? De ${S.rounds.length-firstFree()} ongespeelde ronde(s) worden verwijderd.`,run:generateFinal};break}
+      generateFinal();toast('Finaleronde gemaakt');break;
+    case 'delRound':pending={act:'delRound',msg:'Deze ronde met alle scores verwijderen?',run:()=>{S.rounds.pop();computeConflicts()}};break;
+    case 'newT':pending={act:'newT',msg:'Alle spelers en rondes van dit tornooi wissen?',run:()=>{const st=S.settings;S=fresh();S.settings=st}};break;
+    case 'yes':if(pending)pending.run();pending=null;break;
+    case 'no':pending=null;break;
+    case 'export':{const txt=JSON.stringify(S);$('#backup').value=txt;$('#backup').select();
+      navigator.clipboard?.writeText(txt).then(()=>toast('Back-up gekopieerd'),()=>toast('Selecteer en kopieer de tekst'));return}
+    case 'import':$('#importFile').click();return;
+    case 'paste':loadBackup($('#backup').value);return;
+    default:return;
+  }
+  render();
+});
+render();
+</script>
+
+<script>if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));</script>
+</body>
+</html>
