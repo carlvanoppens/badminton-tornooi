@@ -247,10 +247,10 @@ function currentPlan(minS){
    - individueel: opnieuw dezelfde partner pas als je met iedereen even vaak stond,
      3e keer tegen dezelfde pas als je iedereen al 2 keer tegen had
      teammodus: herhalingen mogen, maar worden zo goed mogelijk gespreid
-   - enkels eerlijk verdeeld, niet twee keer na elkaar
+   - enkels eerlijk verdeeld; twee keer na elkaar enkel enkel als het echt niet anders kan (drie keer nog veel zwaarder)
    - matchbalans: som van (niveau tegenstanders − niveau eigen kant) gaat per speler naar 0,
      ook tussentijds, zodat vroeger stoppen ook eerlijk is */
-const W={ident:1e6,match:1,bal:1,single:80,singleRow:40,
+const W={ident:1e6,match:1,bal:1,single:300,singleRow:4000,
   team:{partner:300,opp3:150,oppSpread:3},indiv:{partner:3000,opp3:3000,oppSpread:5}};
 function forEachMatch(R,single,double){
   const f=R.f,g=R.groups;
@@ -263,18 +263,20 @@ function forEachMatch(R,single,double){
 }
 function makeEvaluator(H){
   const N=H.N,lv=H.lv,w=H.team?W.team:W.indiv;
-  const pC=new Int16Array(N*N),oC=new Int16Array(N*N),sC=new Int16Array(N),sR=new Int16Array(N),bal=new Float64Array(N);
+  const pC=new Int16Array(N*N),oC=new Int16Array(N*N),sC=new Int16Array(N),sR=new Int16Array(N),sN=new Int16Array(N),bal=new Float64Array(N);
   const keys=[];
   const pk=(x,y)=>x<y?x*64+y:y*64+x;
   return function(plan){
-    pC.set(H.pC);oC.set(H.oC);sC.set(H.sC);sR.set(H.sR);bal.set(H.bal);keys.length=0;
+    pC.set(H.pC);oC.set(H.oC);sC.set(H.sC);sR.set(H.sR);sN.set(H.sN);bal.set(H.bal);keys.length=0;
     let c=0;
     const part=(x,y)=>{const n=pC[x*N+y];c+=w.partner*n;pC[x*N+y]++;pC[y*N+x]++};
     const opp=(x,y)=>{const n=oC[x*N+y];c+=w.oppSpread*n+(n>=2?w.opp3*(2*n-3):0);oC[x*N+y]++;oC[y*N+x]++};
     for(let r=0;r<plan.length;r++){
       forEachMatch(plan[r],(a,b)=>{
         const d=lv[b]-lv[a];c+=W.match*d*d;bal[a]+=d;bal[b]-=d;opp(a,b);
-        for(const x of [a,b]){const n=sC[x];c+=W.single*(2*n+1);if(sR[x]===r-1)c+=W.singleRow;sC[x]++;sR[x]=r}
+        for(const x of [a,b]){const n=sC[x];c+=W.single*(2*n+1);
+          sN[x]=sR[x]===r-1?sN[x]+1:1;if(sN[x]>1)c+=W.singleRow*(sN[x]-1)**2; // enkels na elkaar
+          sC[x]++;sR[x]=r}
         keys.push(16777216+pk(a,b));
       },(a1,a2,b1,b2)=>{
         const d=lv[b1]+lv[b2]-lv[a1]-lv[a2];c+=W.match*d*d;bal[a1]+=d;bal[a2]+=d;bal[b1]-=d;bal[b2]-=d;
@@ -315,8 +317,9 @@ function planRounds(from,to,ms=2500){
   const ids=act.map(p=>p.id),ix={};ids.forEach((id,i)=>ix[id]=i);const N=ids.length;
   const st=stats(from,()=>true);
   const H={N,team,lv:ids.map(id=>level(P(id))),pC:new Int16Array(N*N),oC:new Int16Array(N*N),
-    sC:new Int16Array(N),sR:new Int16Array(N).fill(-9),bal:new Float64Array(N),keys:new Set()};
+    sC:new Int16Array(N),sR:new Int16Array(N).fill(-9),sN:new Int16Array(N),bal:new Float64Array(N),keys:new Set()};
   ids.forEach((id,i)=>{const x=st[id];H.sC[i]=x.singles;H.sR[i]=x.lastSingle===from-1?-1:-9;H.bal[i]=x.bal;
+    for(let r=from-1;r>=0&&S.rounds[r].matches.some(m=>m.a.length===1&&(m.a[0]===id||m.b[0]===id));r--)H.sN[i]++;
     for(const q in x.partners)if(q in ix)H.pC[i*N+ix[q]]=x.partners[q];
     for(const q in x.opps)if(q in ix)H.oC[i*N+ix[q]]=x.opps[q]});
   const pk=(x,y)=>x<y?x*64+y:y*64+x;
